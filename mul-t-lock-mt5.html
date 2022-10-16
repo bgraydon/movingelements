@@ -1,0 +1,435 @@
+
+<!DOCTYPE html>
+
+<html><head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <script src="lib/three.min.js"></script>
+  <script src="lib/orbitcontrols.js"></script>
+  <!-- fallback if no WebGL -->
+  <script src="lib/projector.js"></script>
+  <script src="lib/canvasrenderer.js"></script>
+  <script src="lib/jquery-2.1.3.min.js"></script>
+  <script src="src/openscad.js"></script>
+  <script src="src/csg.js"></script>
+  <script src="src/threecsg.js"></script>
+  <script src="src/openjscad.js"></script>
+  <script src="src/formats.js"></script>
+  <style>
+
+body {
+  font: 14px/20px 'Helvetica Neue Light', HelveticaNeue-Light, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 10px;
+}
+
+pre, code, textarea {
+  font: 12px/20px Monaco, monospace;
+  border: 1px solid #CCC;
+  border-radius: 3px;
+  background: #F9F9F9;
+  padding: 0 3px;
+  color: #555;
+}
+pre, textarea {
+  padding: 10px;
+  width: 100%;
+}
+textarea {
+  height: 200px;
+}
+textarea:focus {
+  outline: none;
+}
+
+canvas { cursor: move; }
+
+  </style>
+<link rel="stylesheet" href="openjscad.css" type="text/css">
+
+<script>
+
+var gProcessor=null;
+
+// Show all exceptions to the user:
+OpenJsCad.AlertUserOfUncaughtExceptions();
+
+function onload()
+{
+  gProcessor = new OpenJsCad.Processor(document.getElementById("viewer"));
+  updateSolid();  
+}
+
+function updateSolid()
+{
+  gProcessor.setJsCad(document.getElementById('code').value); 
+  
+  // Move parameter div 
+  document.getElementById("parameter_container").append(document.getElementsByClassName("statusdiv")[0])
+  document.getElementById("parameter_container").append(document.getElementsByClassName("parametersdiv")[0])
+  
+  // Add Opacity image
+  $("#viewer > div.viewer")[0].style.position="absolute";
+  $("#viewer > div.viewer")[0].style.top="0px";
+  $("#viewer > div.viewer")[0].style.left="50%";
+  $("#viewer > div.viewer")[0].style.marginLeft="-400px";
+  
+  $("#top_container")[0].style.width  = $("#viewer > div.viewer")[0].offsetWidth+'px';
+  $("#top_container")[0].style.height = $("#viewer > div.viewer")[0].offsetHeight+'px';
+  
+}
+
+function setKeyPic(input) {
+  if (input.files && input.files[0]) {
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      /*$('#blah')
+        .attr('src', e.target.result)
+        .width(150)
+        .height(200);*/
+		var img = new Image;
+		img.onload = function () {
+			var canvas = document.getElementById("key_pic_3d");
+			var ctx = document.getElementById("key_pic_3d").getContext("2d");
+
+			//resize
+			canvas.width = img.width;
+			canvas.height = img.height;
+			ctx.drawImage(img, 0, 0);
+		};
+
+		img.src = e.target.result;
+		//ctx.drawImage(img, 0, 0);
+    };
+    reader.readAsDataURL(input.files[0]);
+  } else {console.log("No images on file input element");}
+}
+
+</script>
+<title>3D Printable Mul-T-Lock Interactive</title>  
+</head>
+<body onload="onload();">
+  <h1>Mul-T-Lock Interactive - Solid Piece 3D Printable</h1>
+
+<div id='top_container' style='z-index:0;margin-bottom: 0px;position:relative;'>
+
+	<div id="viewer"></div>
+
+</div>
+
+<br />
+Press "Generate STL" to make a file to 3D print the key model.  Set the cut depths in "Parameters" to match the key's cuts. 
+<div id='parameter_container'>
+</div>
+
+  <h2>Model Code</h2>
+Edit 3D source here
+<br><br> 
+<textarea id="code">
+BLANK_HEIGHT = 345;
+BLANK_THICK = 81;
+
+function getParameterDefinitions() {
+  return [
+    { name: 'cut1i', caption: 'Cut 1 Inner:', type: 'int', default: 0},
+    { name: 'cut1o', caption: 'Cut 1 Outer:', type: "choice", values: ["Z","A","B","C","D"], initial: "A"},
+    { name: 'cut1c', caption: 'Cut 1 Correction:', type: 'int', default: 0},
+    { name: 'cut2i', caption: 'Cut 2 Inner:', type: 'int', default: 0},
+    { name: 'cut2o', caption: 'Cut 2 Outer:', type: "choice", values: ["Z","A","B","C","D"], initial: "A"},
+    { name: 'cut2c', caption: 'Cut 2 Correction:', type: 'int', default: 0},
+    { name: 'cut3i', caption: 'Cut 3 Inner:', type: 'int', default: 1},
+    { name: 'cut3o', caption: 'Cut 3 Outer:', type: "choice", values: ["A","B","C","D"], initial: "A"},
+    { name: 'cut3c', caption: 'Cut 3 Correction:', type: 'int', default: 0},
+    { name: 'cut4i', caption: 'Cut 4 Inner:', type: 'int', default: 1},
+    { name: 'cut4o', caption: 'Cut 4 Outer:', type: "choice", values: ["A","B","C","D"], initial: "A"},
+    { name: 'cut4c', caption: 'Cut 4 Correction:', type: 'int', default: 0},
+    { name: 'cut5i', caption: 'Cut 5 Inner:', type: 'int', default: 1},
+    { name: 'cut5o', caption: 'Cut 5 Outer:', type: "choice", values: ["A","B","C","D"], initial: "A"},
+    { name: 'cut5c', caption: 'Cut 5 Correction:', type: 'int', default: 0},
+    { name: 'cut1s', caption: 'Sidebar Cut 1:', type: 'int', default: 1},
+    { name: 'cut2s', caption: 'Sidebar Cut 2:', type: 'int', default: 1},
+    { name: 'cut3s', caption: 'Sidebar Cut 3:', type: 'int', default: 1},
+    { name: 'cut4s', caption: 'Sidebar Cut 4:', type: 'int', default: 1},
+    { name: 'cut5s', caption: 'Sidebar Cut 5:', type: 'int', default: 1},
+    { name: 'thin', caption: 'Thin for Insertion:', type: "choice", values: ["Yes","No"], initial: "Yes"}
+  ];
+}
+
+function union() { 
+   var o,i=0,a=arguments; 
+   if(a[0].length) a = a[0]; 
+   
+   o = a[i++];
+   if(0) {     // we leave to code for now, perhaps later we allow mixed CAG/CSG union
+      if((typeof(a[i]) == "object") && (a[i] instanceof CAG)) {
+         o = a[i].extrude({offset: [0,0,0.1]});    // -- convert a 2D shape to a thin solid, note: do not a[i] = a[i].extrude()
+      } else {
+         o = a[i++];
+      }
+   }
+   for(; i<a.length; i++) { 
+      var obj = a[i];
+
+      // for now disabled, later perhaps allow mixed union of CAG/CSG
+      if(0&&(typeof(a[i]) == "object") && (a[i] instanceof CAG)) {
+         obj = a[i].extrude({offset: [0,0,0.1]});    // -- convert a 2D shape to a thin solid:
+      }
+      o = o.union(obj); 
+   } 
+   return o; 
+}
+
+function difference() { 
+   var o,i=0,a=arguments; 
+   if(a[0].length) a = a[0]; 
+   for(o=a[i++]; i<a.length; i++) { 
+      o = o.subtract(a[i].setColor(1,1,0));     // -- color the cuts
+   } 
+   return o; 
+}
+
+function intersection() { 
+   var o,i=0,a=arguments; 
+   if(a[0].length) a = a[0]; 
+   for(o=a[i++]; i<a.length; i++) { 
+      o = o.intersect(a[i].setColor(1,1,0));    // -- color the cuts
+   } 
+   return o; 
+}
+function linear_extrude(p,s) {
+   //console.log("linear_extrude() not yet implemented");
+   //return;
+   var h = 1, off = 0, /* convexity = 10,*/ twist = 0, slices = 10;
+   if(p.height) h = p.height;
+   //if(p.convexity) convexity = p.convexity;      // abandoned
+   if(p.twist) twist = p.twist;
+   if(p.slices) slices = p.slices;
+   var o = s.extrude({offset:[0,0,h], twistangle:twist, twiststeps:slices});
+   if(p.center==true) {
+      var b = new Array;
+      b = o.getBounds();      // b[0] = min, b[1] = max
+      off = b[1].plus(b[0]);
+      off = off.times(-0.5);
+      o = o.translate(off);
+   }
+   return o;
+}
+
+// -- 3D primitives (OpenSCAD like notion)
+function cylinder(p) {
+   var r1 = 1, r2 = 1, h = 1, fn = 32, round = false; var a = arguments;
+   var off = [0,0,0];
+   if(p&&p.d) {
+      r1 = r2 = p.d/2;
+   }
+   if(p&&p.r) {
+      r1 = p.r; r2 = p.r; 
+   }
+   if(p&&p.h) {
+      h = p.h;
+   }
+   if(p&&(p.r1||p.r2)) {
+      r1 = p.r1; r2 = p.r2; if(p.h) h = p.h;
+   }
+   if(p&&(p.d1||p.d2)) {
+      r1 = p.d1/2; r2 = p.d2/2;
+   }
+    
+   if(a&&a[0]&&a[0].length) {
+      a = a[0]; r1 = a[0]; r2 = a[1]; h = a[2]; if(a.length==4) fn = a[3];
+   }
+   if(p&&p.fn) fn = p.fn;
+   //if(p&&p.center==true) zoff = -h/2;
+   if(p&&p.round==true) round = true;
+   var o;
+   if(p&&(p.start&&p.end)) {
+      o = round?
+         CSG.roundedCylinder({start:p.start,end:p.end,radiusStart:r1,radiusEnd:r2,resolution:fn}):
+         CSG.cylinder({start:p.start,end:p.end,radiusStart:r1,radiusEnd:r2,resolution:fn});
+   } else {
+      o = round?
+         CSG.roundedCylinder({start:[0,0,0],end:[0,0,h],radiusStart:r1,radiusEnd:r2,resolution:fn}):
+         CSG.cylinder({start:[0,0,0],end:[0,0,h],radiusStart:r1,radiusEnd:r2,resolution:fn});
+      var r = r1>r2?r1:r2;
+      if(p&&p.center&&p.center.length) {         // preparing individual x,y,z center
+         off = [p.center[0]?0:r,p.center[1]?0:r,p.center[2]?-h/2:0];
+      } else if(p&&p.center==true) { 
+         off = [0,0,-h/2];
+      } else if(p&&p.center==false) {
+         off = [0,0,0];
+      }
+      if(off[0]||off[1]||off[2]) o = o.translate(off);
+   }
+   return o;
+}
+
+function cube(p) { 
+   var s = 1, v = null, off = [0,0,0], round = false, r = 0, fn = 8;
+   if(p&&p.length) v = p;		
+   if(p&&p.size&&p.size.length) v = p.size;        // { size: [1,2,3] }
+   if(p&&p.size&&!p.size.length) s = p.size;       // { size: 1 }
+   //if(p&&!p.size&&!p.length&&p.center===undefined&&!p.round&&!p.radius) s = p;      // (2)
+   if(p&&(typeof p!='object')) s = p;      // (2)
+   if(p&&p.round==true) { round = true, r = v&&v.length?(v[0]+v[1]+v[2])/30:s/10}
+   if(p&&p.radius) { round = true, r = p.radius; }
+   if(p&&p.fn) fn = p.fn;              // applies in case of round: true
+
+   var x = s, y = s, z = s; 
+   if(v&&v.length) { 
+      x = v[0], y = v[1], z = v[2]; 
+   }
+   off = [x/2,y/2,z/2];       // center: false default
+   var o = round?
+      CSG.roundedCube({radius:[x/2,y/2,z/2], roundradius:r, resolution: fn}):
+      CSG.cube({radius:[x/2,y/2,z/2]});
+   if(p&&p.center&&p.center.length) {
+      off = [p.center[0]?0:x/2, p.center[1]?0:y/2,p.center[2]?0:z/2];
+   } else if(p&&p.center==true) { 
+      off = [0,0,0];
+   } else if(p&&p.center==false) {
+      off = [x/2,y/2,z/2];
+   }
+   if(off[0]||off[1]||off[2]) o = o.translate(off);
+   //if(v&&v.length) o = o.scale(v);      // we don't scale afterwards, we already created box with the correct size
+   return o;
+}
+
+function warding() {
+    return union(
+        cube([1610,79,34]).translate([0,23,-16]),
+        cube([1610,76,34]).translate([0,BLANK_HEIGHT-65-52+5,-16])
+    );
+}
+function tip() {
+    return union(
+        cube(100)
+            .rotateZ(-16)
+            .translate([-30,-70,0]),
+        CAG.fromPoints([[-124,100],[124,100],[50,0],[-80,0]])
+            .extrude({offset: [0,0,250]})
+            .rotateZ(90)
+            .rotateY(-50)
+            .translate([50,85,0])
+    );
+}
+function sidemilling(params) {
+    S = [890,812,734,656,578,500,422,344,266];
+    D = [15,35,55,75,95];
+    depths = [params.cut1s, params.cut2s, params.cut3s, params.cut4s, params.cut5s];//[2,3,1,2,4];
+    depths_cut = depths.flatMap(x => [x,1]).slice(0,-1);
+    profile = [[40,60],[40,10],[65,10],[65,135],[10,65],[10,10],[112,0],[65,135]]
+        .concat(
+            depths.flatMap((x,i) => [
+                [35,266+i*156-15-(x*20+15-35)],
+                [x*20+15,266+i*156-15], 
+                [x*20+15,266+i*156+15],
+                [35,266+i*156+15+(x*20+15-35)]
+            ]).slice(1,-1)
+        );
+    return linear_extrude({ height: 60 },
+        (new CSG.Path2D(profile))
+            .expandToCAG(25,20)
+        ).translate([0,0,-28])
+        .rotateZ(-90)
+        .translate([0,BLANK_HEIGHT,0])
+        .setColor([0,0,1]);
+}
+function topcuts(params) {
+    inner = [params.cut1i, params.cut2i, params.cut3i, params.cut4i, params.cut5i];//[2,1,2,4,1];
+    outer = [params.cut1o, params.cut2o, params.cut3o, params.cut4o, params.cut5o].map(x=>['Z','A','B','C','D'].indexOf(x));//[1,1,3,3,2];
+    
+    correction = [params.cut1c, params.cut2c, params.cut3c, params.cut4c, params.cut5c];//[0, 0, 0, -8, 8];
+    
+    //old =[0,5,20,35,50,65]
+    //depths=[0,3,19,35,51,67];
+    depths=[0,5,20,35,50,65]
+    spaces=[350,505,660,815,970];
+    //360,505,660,810,968
+    return union(...inner.map((d,i) => 
+        CAG.fromPoints([[0,0],[0,12],[65,80],[1000,80],[1000,0]])
+        .rotateZ(-90)
+        .rotateExtrude({resolution: 36})
+        .rotateY(0)
+        .translate([spaces[i],100,depths[d]-correction[i]-1*(4-i)-5])),
+    ...outer.map((d,i) => 
+        CAG.fromPoints([[0,-10],[0,10],[65,80],[1000,80],[1000,-38],[25,-38]])
+        .translate([0,39,0])
+        .rotateZ(-90)
+        .rotateExtrude({resolution: 36})
+        .rotateY(0)
+        .translate([spaces[i],100,depths[d]-correction[i]-1*(4-i)-5]))//*/
+    );
+}
+function cuts() {
+    return union(
+        topcuts(),
+        sidemilling()
+    );
+}
+function blankcuts() {
+    return union(
+        warding(),
+        tip()
+    );
+}
+function slug() {
+    spaces=[350,505,660,815,970];
+    return union(
+        cube([1600,BLANK_HEIGHT,BLANK_THICK]),
+        cylinder({r: 31, h: 72})
+            .translate([0,0,-31])
+            .rotateX(90)
+            .translate([210,BLANK_HEIGHT/2,BLANK_THICK-6]),
+        ...spaces.map(s=>cylinder({r1: 51, r2:39, h: 15})
+            .translate([s,BLANK_HEIGHT-100,BLANK_THICK])),
+        cube([600,BLANK_HEIGHT,BLANK_THICK])
+            .translate([1600,0,0])
+    );
+}
+function backchop() {
+    return cube([1400,BLANK_HEIGHT,20])
+        .translate([0,0,-20])
+        .setColor([0,0,1]);
+}
+function main (params) {
+    /*return union(
+        cuts(),
+        cuts().rotate([0,175,45],[1,0,0],180),
+        slug().setColor(0.8,0.8,0)
+    ).scale(0.1);//*/
+    
+    /*return union(
+        sidemilling().rotateY(0.8).translate([0,0,20]),
+        backchop().rotateY(0.8).translate([0,0,20]),
+        blankcuts().rotateY(0.8).translate([0,0,20]),
+        cube([1600,BLANK_HEIGHT,BLANK_THICK])
+    ).scale(0.1)//*/
+    
+    if(params.thin == "No") {
+        return difference(
+            slug().setColor(0.8,0.8,0),
+            topcuts(params),
+            topcuts(params).rotate([0,BLANK_HEIGHT/2,BLANK_THICK/2],[1,0,0],180),
+            sidemilling(params),
+            sidemilling(params).rotate([0,BLANK_HEIGHT/2,BLANK_THICK/2],[1,0,0],180),
+            blankcuts(),
+            blankcuts().rotate([0,BLANK_HEIGHT/2,BLANK_THICK/2],[1,0,0],180)
+        ).scale(2.54/100);//*/
+    } else {
+        return difference(
+            slug().setColor(0.8,0.8,0),
+            topcuts(params).rotate([0,BLANK_HEIGHT/2,BLANK_THICK/2],[1,0,0],180),
+            blankcuts().rotate([0,BLANK_HEIGHT/2,BLANK_THICK/2],[1,0,0],180),
+            sidemilling(params).rotateY(0.8).translate([0,0,20]),
+            backchop().rotateY(0.8).translate([0,0,20]),
+            blankcuts().rotateY(0.8).translate([0,0,20])
+        ).scale(2.54/100);//*/
+    }
+}
+</textarea><br>
+<input type="submit" value="Update" onclick="updateSolid(); return false;">
+<br>
+This code will also work in any other JSCAD renderer such as <a href="http://openjscad.org/">http://openjscad.org/</a>.
+
+</body>
+</html>
